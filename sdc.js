@@ -28,10 +28,6 @@
 
 'use strict';
 
-for (let i = 0; i < 100; i ++) {
-    console.log("running the simple discord crypt")
-}
-
 const BlacklistUrl = "https://gitlab.com/An0/SimpleDiscordCrypt/raw/master/blacklist.txt";
 
 const SavedLocalStorage = (typeof(localStorage) !== 'undefined') ? localStorage : null;
