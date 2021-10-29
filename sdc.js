@@ -1,12 +1,12 @@
 // ==UserScript==
 // @name         SimpleDiscordCrypt
 // @namespace    https://gitlab.com/An0/SimpleDiscordCrypt
-// @version      1.4.2
+// @version      1.4.2.2
 // @description  I hope people won't start calling this SDC ^_^
 // @author       An0
 // @license      LGPLv3 - https://www.gnu.org/licenses/lgpl-3.0.txt
-// @downloadURL  https://sdc.slip1244.repl.co/sdc.js
-// @updateURL    https://sdc.slip1244.repl.co/meta.js
+// @downloadURL  https://gitlab.com/An0/SimpleDiscordCrypt/raw/master/SimpleDiscordCrypt.user.js
+// @updateURL    https://gitlab.com/An0/SimpleDiscordCrypt/raw/master/SimpleDiscordCrypt.meta.js
 // @icon         https://gitlab.com/An0/SimpleDiscordCrypt/raw/master/logo.png
 // @match        https://*.discord.com/channels/*
 // @match        https://*.discord.com/activity
@@ -746,7 +746,7 @@ const MenuBar = {
     toggleOnButtonHtml: `<div class="sdc" style="position:relative"><svg class="SDC_TOGGLE" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 36"><path d="M18 0c-4.612 0-8.483 3.126-9.639 7.371l3.855 1.052C12.91 5.876 15.233 4 18 4c3.313 0 6 2.687 6 6v10h4V10c0-5.522-4.477-10-10-10z"/><path d="M31 32c0 2.209-1.791 4-4 4H9c-2.209 0-4-1.791-4-4V20c0-2.209 1.791-4 4-4h18c2.209 0 4 1.791 4 4v12z"/></svg><p class="sdc-tooltip">Encrypt Channel</p></div>`,
     toggleOffButtonHtml: `<div class="sdc" style="position:relative"><svg class="SDC_TOGGLE" style="opacity:1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 36"><path d="M18 3C12.477 3 8 7.477 8 13v10h4V13c0-3.313 2.686-6 6-6s6 2.687 6 6v10h4V13c0-5.523-4.477-10-10-10z"/><path d="M31 32c0 2.209-1.791 4-4 4H9c-2.209 0-4-1.791-4-4V20c0-2.209 1.791-4 4-4h18c2.209 0 4 1.791 4 4v12z"/><p class="sdc-tooltip">Disable Encryption</p></svg>`,
     keySelectHtml: `<div class="sdc sdc-select" style="margin:-3px 0 -2px 5px"><label style="min-width:200px;max-width:300px;height:30px"><input class="SDC_DROPDOWN sdc-hidden" type="checkbox"><p class="SDC_SELECTED" style="justify-content:center;text-align:center"></p></label><div class="SDC_OPTIONS" style="visibility:hidden"></div></div>`,
-    toggledOnCss: `${ChatInputSelector}{box-shadow:0 0 0 1px ${BaseColor} !important;transition:0.5s background-color}`,
+    toggledOnCss: `${ChatInputSelector}{box-shadow:0 0 0 1px ${BaseColor} !important}`,
     menuHtml: `<button type="button" class="SDC_FOCUS sdc-hidden"></button>
 <div class="sdc sdc-menu SDC_MENU" style="visibility:hidden">
     <div class="SDC_DMMENU">
@@ -1233,12 +1233,68 @@ switch(popBits(2)) {
     }
 };
 
-
 var Discord;
 var Utils = {
     Log: (message) => { console.log(`%c[SimpleDiscordCrypt] %c${message}`, `color:${BaseColor};font-weight:bold`, "") },
     Warn: (message) => { console.warn(`%c[SimpleDiscordCrypt] %c${message}`, `color:${BaseColor};font-weight:bold`, "") },
-    Error: (message) => { console.error(`%c[SimpleDiscordCrypt] %c${message}`, `color:${BaseColor};font-weight:bold`, "") }
+    Error: (message) => { console.error(`%c[SimpleDiscordCrypt] %c${message}`, `color:${BaseColor};font-weight:bold`, "") },
+    Webpack: function() {
+        if(this.cachedWebpack) return this.cachedWebpack;
+
+        let webpackExports;
+
+        if(typeof BdApi !== "undefined" && BdApi?.findModuleByProps && BdApi?.findModule) {
+            return this.cachedWebpack = { findModule: BdApi.findModule, findModuleByUniqueProperties: (props) => BdApi.findModuleByProps.apply(null, props) };
+        }
+        else if(Discord.window.webpackChunkdiscord_app != null) {
+            const ids = ['__extra_id__'];
+            Discord.window.webpackChunkdiscord_app.push([
+                ids,
+                {},
+                (req) => {
+                    webpackExports = req;
+                    ids.length = 0;
+                }
+            ]);
+        }
+        else if(Discord.window.webpackJsonp != null) {
+            webpackExports = typeof(Discord.window.webpackJsonp) === 'function' ?
+            Discord.window.webpackJsonp(
+                [],
+                { '__extra_id__': (module, _export_, req) => { _export_.default = req } },
+                [ '__extra_id__' ]
+            ).default :
+            Discord.window.webpackJsonp.push([
+                [],
+                { '__extra_id__': (_module_, exports, req) => { _module_.exports = req } },
+                [ [ '__extra_id__' ] ]
+            ]);
+
+            delete webpackExports.m['__extra_id__'];
+            delete webpackExports.c['__extra_id__'];
+        }
+        else return null;
+
+        const findModule = (filter) => {
+            for(let i in webpackExports.c) {
+                if(webpackExports.c.hasOwnProperty(i)) {
+                    let m = webpackExports.c[i].exports;
+
+                    if(!m) continue;
+
+                    if(m.__esModule && m.default) m = m.default;
+
+                    if(filter(m)) return m;
+                }
+            }
+
+            return null;
+        };
+
+        const findModuleByUniqueProperties = (propNames) => findModule(module => propNames.every(prop => module[prop] !== undefined));
+
+        return this.cachedWebpack = { findModule, findModuleByUniqueProperties };
+    }
 };
 var DataBase;
 var Cache;
@@ -1249,101 +1305,49 @@ var ImageZoom;
 var ResolveInitPromise;
 var InitPromise = new Promise(resolve => { ResolveInitPromise = resolve });
 
-function Init(nonInvasive)
+function Init(final)
 {
     Discord = { window: (typeof(unsafeWindow) !== 'undefined') ? unsafeWindow : window };
 
-    if(Discord.window.webpackJsonp == null) { if(!nonInvasive) Utils.Error("Webpack not found."); return 0; }
+    const webpackUtil = Utils.Webpack();
+    if(webpackUtil == null) { if(final) Utils.Error("Webpack not found."); return 0; }
 
-    const webpackExports = typeof(Discord.window.webpackJsonp) === 'function' ?
-          Discord.window.webpackJsonp(
-              [],
-              { '__extra_id__': (module, _export_, req) => { _export_.default = req } },
-              [ '__extra_id__' ]
-          ).default :
-          Discord.window.webpackJsonp.push( [
-              [],
-              { '__extra_id__': (_module_, exports, req) => { _module_.exports = req } },
-              [ [ '__extra_id__' ] ] ]
-          );
-
-    delete webpackExports.m['__extra_id__'];
-    delete webpackExports.c['__extra_id__'];
-
-    const findModule = (filter, nonInvasive) => {
-        for(let i in webpackExports.c) {
-            if(webpackExports.c.hasOwnProperty(i)) {
-                let m = webpackExports.c[i].exports;
-
-                if(!m) continue;
-
-                if(m.__esModule && m.default) m = m.default;
-
-                if(filter(m)) return m;
-            }
-        }
-
-        if(!nonInvasive) {
-            Utils.Warn("Couldn't find module in existing cache. Loading all modules.");
-
-            for(let i = 0; i < webpackExports.m.length; i++) {
-                try {
-                    let m = webpackExports(i);
-
-                    if(!m) continue;
-
-                    if(m.__esModule && m.default) m = m.default;
-
-                    if(filter(m)) return m;
-                }
-                catch(e) { }
-            }
-
-            Utils.Warn("Cannot find module.");
-        }
-
-        return null;
-    };
-
-    const findModuleByUniqueProperties = (propNames, nonInvasive) => findModule(module => propNames.every(prop => module[prop] !== undefined), nonInvasive);
+    const { findModule, findModuleByUniqueProperties } = webpackUtil;
 
     let modules = {};
 
-    modules.MessageQueue = findModuleByUniqueProperties([ 'enqueue', 'handleSend', 'handleEdit' ], nonInvasive);
-    if(modules.MessageQueue == null) { if(!nonInvasive) Utils.Error("MessageQueue not found."); return 0; }
+    modules.MessageQueue = findModuleByUniqueProperties([ 'enqueue', 'handleSend', 'handleEdit' ]);
+    if(modules.MessageQueue == null) { if(final) Utils.Error("MessageQueue not found."); return 0; }
 
-    modules.MessageDispatcher = findModuleByUniqueProperties( [ 'dispatch', 'maybeDispatch', 'dirtyDispatch' ], nonInvasive);
-    if(modules.MessageDispatcher == null) { if(!nonInvasive) Utils.Error("MessageDispatcher not found."); return 0; }
+    modules.MessageDispatcher = findModuleByUniqueProperties( [ 'dispatch', 'maybeDispatch', 'dirtyDispatch' ]);
+    if(modules.MessageDispatcher == null) { if(final) Utils.Error("MessageDispatcher not found."); return 0; }
 
-    modules.UserCache = findModuleByUniqueProperties( [ 'getUser', 'getUsers', 'getCurrentUser' ], nonInvasive);
-    if(modules.UserCache == null) { if(!nonInvasive) Utils.Error("UserCache not found."); return 0; }
+    modules.UserCache = findModuleByUniqueProperties( [ 'getUser', 'getUsers', 'getCurrentUser' ]);
+    if(modules.UserCache == null) { if(final) Utils.Error("UserCache not found."); return 0; }
 
-    modules.ChannelCache = findModuleByUniqueProperties( [ 'getChannel', 'getMutableGuildChannels', 'getDMFromUserId' ], nonInvasive);
-    if(modules.ChannelCache == null) { if(!nonInvasive) Utils.Error("ChannelCache not found."); return 0; }
+    modules.ChannelCache = findModuleByUniqueProperties( [ 'getChannel', 'getMutableGuildChannels', 'getDMFromUserId' ]);
+    if(modules.ChannelCache == null) { if(final) Utils.Error("ChannelCache not found."); return 0; }
 
-    modules.SelectedChannelStore = findModuleByUniqueProperties( [ 'getChannelId', 'getVoiceChannelId', 'getLastSelectedChannelId' ], nonInvasive);
-    if(modules.SelectedChannelStore == null) { if(!nonInvasive) Utils.Error("SelectedChannelStore not found."); return 0; }
+    modules.SelectedChannelStore = findModuleByUniqueProperties( [ 'getChannelId', 'getVoiceChannelId', 'getLastSelectedChannelId' ]);
+    if(modules.SelectedChannelStore == null) { if(final) Utils.Error("SelectedChannelStore not found."); return 0; }
 
-    modules.GuildCache = findModuleByUniqueProperties( [ 'getGuild', 'getGuilds' ], nonInvasive);
-    if(modules.GuildCache == null) { if(!nonInvasive) Utils.Error("GuildCache not found."); return 0; }
+    modules.GuildCache = findModuleByUniqueProperties( [ 'getGuild', 'getGuilds' ]);
+    if(modules.GuildCache == null) { if(final) Utils.Error("GuildCache not found."); return 0; }
 
-    modules.FileUploader = findModuleByUniqueProperties( [ 'upload', 'cancel', 'instantBatchUpload' ], nonInvasive);
-    if(modules.FileUploader == null) { if(!nonInvasive) Utils.Error("FileUploader not found."); return 0; }
+    modules.FileUploader = findModuleByUniqueProperties( [ 'upload', 'cancel', 'instantBatchUpload' ]);
+    if(modules.FileUploader == null) { if(final) Utils.Error("FileUploader not found."); return 0; }
 
-    modules.PermissionEvaluator = findModuleByUniqueProperties( [ 'can', 'computePermissions', 'canEveryone' ], nonInvasive);
-    if(modules.PermissionEvaluator == null) { if(!nonInvasive) Utils.Error("PermissionEvaluator not found."); return 0; }
+    modules.PermissionEvaluator = findModuleByUniqueProperties( [ 'can', 'computePermissions', 'canEveryone' ]);
+    if(modules.PermissionEvaluator == null) { if(final) Utils.Error("PermissionEvaluator not found."); return 0; }
 
-    modules.RelationshipStore = findModuleByUniqueProperties( [ 'isFriend', 'isBlocked', 'getFriendIDs' ], nonInvasive);
-    if(modules.RelationshipStore == null) { if(!nonInvasive) Utils.Error("RelationshipStore not found."); return 0; }
+    modules.RelationshipStore = findModuleByUniqueProperties( [ 'isFriend', 'isBlocked', 'getFriendIDs' ]);
+    if(modules.RelationshipStore == null) { if(final) Utils.Error("RelationshipStore not found."); return 0; }
 
-    modules.PrivateChannelManager = findModuleByUniqueProperties( [ 'openPrivateChannel', 'ensurePrivateChannel', 'closePrivateChannel' ], nonInvasive);
-    if(modules.PrivateChannelManager == null) { if(!nonInvasive) Utils.Error("PrivateChannelManager not found."); return 0; }
+    modules.PrivateChannelManager = findModuleByUniqueProperties( [ 'openPrivateChannel', 'ensurePrivateChannel', 'closePrivateChannel' ]);
+    if(modules.PrivateChannelManager == null) { if(final) Utils.Error("PrivateChannelManager not found."); return 0; }
 
-    //modules.MessageCache = findModuleByUniqueProperties([ '_channelMessages', 'getOrCreate', 'clearCache' ], nonInvasive);
-    //if(modules.MessageCache == null) { if(!nonInvasive) Utils.Error("MessageCache not found."); return 0; }
-
-    modules.DiscordConstants = findModuleByUniqueProperties( [ 'SpotifyEndpoints' ], nonInvasive);
-    modules.Premium = findModuleByUniqueProperties( [ 'canUseEmojisEverywhere' ], nonInvasive);
+    modules.DiscordConstants = findModuleByUniqueProperties( [ 'SpotifyEndpoints' ]);
+    modules.Premium = findModuleByUniqueProperties( [ 'canUseEmojisEverywhere' ]);
 
     Discord.modules = modules;
 
@@ -2643,6 +2647,7 @@ async function processMessage(message, ignoreAttachments) {
     }
 
     if((Cache.pingOn != null) && Cache.pingOn.test(message.content)) message.mentions = [Discord.getCurrentUser()];
+
     return result;
 }
 
@@ -2871,8 +2876,7 @@ async function decryptAttachment(key, keyHash, message, attachment, channelConfi
 }
 
 const starttimeRegex = /(?:(\d+)h)?(?:(\d+)m)?(?:(\d+)s)?/;
-async function createYoutubeEmbed(message, id, timequery) {
-    let url = `https://youtube.com/watch?v=${id}`
+function createYoutubeEmbed(id, timequery) {
     let embedUrl = `https://youtube.com/embed/${id}`;
     if(timequery != null) {
         let time = timequery.split('=')[1];
@@ -2882,144 +2886,24 @@ async function createYoutubeEmbed(message, id, timequery) {
         if(timeMatch[2] !== undefined) t += timeMatch[2] * 60;
         if(timeMatch[3] !== undefined) t += parseInt(timeMatch[3]);
         if(t !== 0) time = t;
-        url += "&start=" + time
         embedUrl += "?start=" + time;
     }
-    const data = await fetch(`https://og.mreconomical.repl.co/fetch?site=${url}`).then(res => res.json())
-    if (!data.ogTitle) return
-    message.embeds.push({
+    return {
         type: 'video',
-        color: 0xFF0000,
-        provider: {
-            name: 'YouTube',
-            url: 'https://youtube.com'
-        },
-        title: data.ogTitle,
-        url,
+        url: `https://youtube.com/watch?v=${id}`,
         thumbnail: { url: `https://i.ytimg.com/vi/${id}/maxresdefault.jpg`, width: 1280, height: 720 },
         video: { url: embedUrl, width: 1280, height: 720 }
-    })
-    Discord.dispatch({type: 'MESSAGE_UPDATE', message})
+    }
 }
 const youtubeRegex = /[?&]v=([\w-]+).*?(&(?:t|start)=[\dhms]+)?/;
 function embedYoutube(message, url, queryString) {
     let match = youtubeRegex.exec(queryString);
-    if(match != null) {
-        createYoutubeEmbed(message, match[1], match[2]);
-    } else {
-        embedGeneral(message, url, queryString);
-    }
+    if(match != null) message.embeds.push(createYoutubeEmbed(match[1], match[2]));
 }
 const youtuRegex = /^([\w-]+).*?(\?(?:t|start)=[\dhms]+)?/;
 function embedYoutu(message, url, queryString) {
-    let match = youtuRegex.exec(queryString.slice(1));
-    if(match != null) {
-        createYoutubeEmbed(message, match[1], match[2]);
-    } else {
-        embedGeneral(message, url, queryString);
-    }
-}
-async function embedTwitter(message, url, queryString) {
-    if (!queryString.includes("/status/")) {
-        embedGeneral(message, url, queryString)
-        return
-    }
-    const data = await fetch(`https://og.mreconomical.repl.co/twitter?link=${url}`).then(res => res.json())
-    const authorUrl = data.oEmbed.author_url
-    const embed = {
-        type: "rich",
-        color: 0x1DA1F2,
-        author: {
-            name: `${data.oEmbed.author_name} (@${authorUrl.slice(authorUrl.lastIndexOf("/") + 1)})`,
-            url: authorUrl
-        },
-        description: data.open_graph.description.slice(1, -1),
-        footer: {
-            text: 'Twitter',
-            icon_url: 'https://abs.twimg.com/icons/apple-touch-icon-192x192.png'
-        }
-    }
-    if (data.open_graph.images.length) {
-        try {
-            const imageUrl = encodeURIComponent(data.open_graph.images[0].url)
-            if (!imageUrl.includes("profile_images")) {
-                const { width, height } = await fetch(`https://og.mreconomical.repl.co/imageSize?url=${imageUrl}`).then(res => res.json())
-                embed.image = {
-                    width,
-                    height,
-                    url: `https://og.mreconomical.repl.co/image?url=${imageUrl}`
-                }
-            }
-        } catch {}
-    }
-    message.embeds.push(embed)
-    Discord.dispatch({type: 'MESSAGE_UPDATE', message})
-}
-function parseColor(color) {
-    if (typeof color !== "string") return
-    if (color.startsWith("#")) {
-        return Number(color.slice(1))
-    } else if (color.startsWith("rgb") || color.startsWith("rgba")) {
-        const values = /rgba?\((\d+), ?(\d+), ?(\d+)/g.exec(color)
-        return Number(`0x${(+values[1]).toString(16).padStart(2, "0")}${(+values[2]).toString(16).padStart(2, "0")}${(+values[3]).toString(16).padStart(2, "0")}`)
-    }
-}
-async function embedTenor(message, url, queryString) {
-    if (!queryString.startsWith("/view/")) {
-        embedGeneral(message, url, queryString)
-        return
-    }
-    const data = await fetch(`https://og.mreconomical.repl.co/fetch?site=${url}`).then(res => res.json())
-    message.embeds.push({
-        type: "image",
-        url: data.ogImage,
-        thumbnail: {
-            url: data.ogImage,
-            width: data.ogImageWidth,
-            height: data.ogImageHeight
-        }
-    })
-    Discord.dispatch({type: 'MESSAGE_UPDATE', message})
-}
-async function embedTenorShort(message, url, queryString) {
-    const { width, height } = await fetch(`https://og.mreconomical.repl.co/imageSize?url=${url}`).then(res => res.json())
-    message.embeds.push({
-        type: "image",
-        url,
-        thumbnail: {
-            url,
-            width,
-            height
-        }
-    })
-    Discord.dispatch({type: 'MESSAGE_UPDATE', message})
-}
-async function embedGeneral(message, url, queryString) {
-    const data = await fetch(`https://og.mreconomical.repl.co/fetch?site=${url}`).then(res => res.json())
-    if (!data.ogTitle && !data.title && !data.ogDescription && !data.description) return
-    const embed = {
-        color: parseColor(data.themeColor),
-        provider: {
-            name: data.host,
-            url: `${url.startsWith("https") ? "https" : "http"}://${data.host}`
-        },
-        title: data.ogTitle || data.title,
-        description: data.ogDescription || data.description,
-        url
-    }
-    if (data.ogImage) {
-        const imageUrl = encodeURIComponent(data.ogImage)
-        try {
-            const { width, height } = await fetch(`https://og.mreconomical.repl.co/imageSize?url=${imageUrl}`).then(res => res.json())
-            embed.thumbnail = {
-                width,
-                height,
-                url: `https://og.mreconomical.repl.co/image?url=${imageUrl}`
-            }
-        } catch {}
-    }
-    message.embeds.push(embed)
-    Discord.dispatch({type: 'MESSAGE_UPDATE', message})
+    let match = youtuRegex.exec(queryString);
+    if(match != null) message.embeds.push(createYoutubeEmbed(match[1], match[2]));
 }
 const imageRegex = /^[^?]*\.(?:png|jpe?g|gif|webp)(?:$|\?)/i;
 function embedImage(message, url, queryString) {
@@ -3078,7 +2962,7 @@ function embedEncrypted(message, url, queryString) {
 }
 function embedMega(message, url, queryString) {
     if(!queryString.startsWith("embed")) {
-        if(queryString.startsWith("file"))
+		if(queryString.startsWith("file"))
             queryString = queryString.substr(4);
         url = "https://mega.nz/embed" + queryString;
     }
@@ -3090,17 +2974,11 @@ function embedSoundcloud(message, url, queryString) {
         embedEncrypted(message, "https://w.soundcloud.com/player/?visual=true&url=" + encodeURIComponent(url), null);
 }
 const linkEmbedders = {
-    GENERAL: embedGeneral,
     "www.youtube.com": embedYoutube,
-    "youtube.com": embedYoutube,
     "youtu.be": embedYoutu,
-    "www.twitter.com": embedTwitter,
-    "twitter.com": embedTwitter,
     "cdn.discordapp.com": embedImage,
     "media.discordapp.net": embedImage,
-    "i.imgur.com": embedImage,
-    "tenor.com": embedTenor,
-    "c.tenor.com": embedTenorShort
+    "i.imgur.com": embedImage
 };
 if(FixedCsp) Object.assign(linkEmbedders, {
     "i.redd.it": embedImage,
@@ -3112,7 +2990,7 @@ if(FixedCsp) Object.assign(linkEmbedders, {
 const MENTION_EVERYONE_CHECK = 0x20000n;
 const everyoneRegex = /(?<!https?:\/\/[^\s]*)@(?:everyone|here)/;
 const roleMentionRegex = /<@&(\d{16,20})>/g;
-const urlRegex = /(https?:\/\/((?:[^\s\/]+\.)+[^\/\s]+)(\/[\S]+.)?)/g;
+const urlRegex = /(?:<https?:\/\/(?:[^\s\/?\.#]+\.)+(?:[^\s\/?\.#]+)\/[^\s<>'"]+>|https?:\/\/((?:[^\s\/?\.#]+\.)+(?:[^\s\/?\.#]+))\/([^\s<>'"]+))/g;
 function postProcessMessage(message, content) {
     let currentUser = Discord.getCurrentUser();
     if(content.includes(`<@${currentUser.id}>`) || content.includes(`<@!${currentUser.id}>`)) {
@@ -3147,15 +3025,12 @@ function postProcessMessage(message, content) {
         }
     }
 
-    const url = urlRegex.exec(content);
-    if (url && message.flags !== 4) {
-        let linkEmbedder = linkEmbedders[url[2]];
-        if(linkEmbedder != null) {
-            linkEmbedder(message, url[1], url[3] || "");
-        } else {
-            linkEmbedders.GENERAL(message, url[1], url[3] || "");
-        }
+    let url;
+    while((url = urlRegex.exec(content)) != null && url[1] != null) {
+        let linkEmbedder = linkEmbedders[url[1]];
+        if(linkEmbedder != null) linkEmbedder(message, url[0], url[2]);
     }
+    urlRegex.lastIndex = 0;
 }
 
 let keywaitingMessages = {};
@@ -3267,8 +3142,8 @@ async function decryptMessage(message, payload, ignoreAttachments) {
     message.embeds = []; //remove embeds in case of edit and in case of the payload is from the embed
 
     if(payloadBuffer.byteLength === 16) {
-        if(!differentKey) message.content = "<:ENC:869436702261932032>⁣"; //invisible separator at the end to make the emoji smaller
-        else message.content = `<:DIFF_${differentKeyDesc}:869436702014443561>⁣`;
+        if(!differentKey) message.content = "<:ENC:465534298662109185>⁣"; //invisible separator at the end to make the emoji smaller
+        else message.content = `<:ENC_${differentKeyDesc}:611264394747183115>⁣`;
     }
     else {
         let content;
@@ -3281,8 +3156,8 @@ async function decryptMessage(message, payload, ignoreAttachments) {
             message.attachments = [];
             return false;
         }
-        if(!differentKey) message.content = "<:ENC:869436702261932032>" + content;
-        else message.content = `<:DIFF_${differentKeyDesc}:869436702014443561>` + content;
+        if(!differentKey) message.content = "<:ENC:465534298662109185>" + content;
+        else message.content = `<:ENC_${differentKeyDesc}:611264394747183115>` + content;
         //message.content = content.replace(/^/gm, "<:ENC:465534298662109185>"); //bad for code blocks
         postProcessMessage(message, content);
     }
@@ -3600,9 +3475,9 @@ function handleDeletes(event) {
     Discord.original_dispatch.apply(this, arguments);
 }
 
-//const EMBED_LINKS_CHECK = { data: 0x4000n };
+const EMBED_LINKS_CHECK = 0x4000n;
 const prefixRegex = /^(?::?ENC(?:(?:_\w*)?:|\b)|<:ENC:\d{1,20}>)\s*/;
-const noencprefixRegex = /^(?::?NEC:?|<:NEC:\d{1,20}>)\s*/; //not really expecting an emoji
+const noencprefixRegex = /^(?::?NOENC:?|<:NOENC:\d{1,20}>)\s*/; //not really expecting an emoji
 async function handleSend(channelId, message, forceSimple) {
     let channelConfig = Utils.GetChannelConfig(channelId);
     let content = message.content;
@@ -3628,6 +3503,7 @@ async function handleSend(channelId, message, forceSimple) {
         return null;
     }
 
+
     let key = await Utils.GetKeyByHash(channelConfig.k);
     let keyHashBytes = Utils.Base64ToBytes(channelConfig.k);
     let messageBytes;
@@ -3640,132 +3516,27 @@ async function handleSend(channelId, message, forceSimple) {
 
     let payload = Utils.PayloadEncode(messageBytes);
 
-    // let channel = Discord.getChannel(channelId);
-    // if(forceSimple || Cache.channelBlacklist === 2 || (channel.type === 0 && !Discord.can(EMBED_LINKS_CHECK, Discord.getCurrentUser(), channel))) {
-        message.content = payload + " `𝘚𝘪𝘮𝘱𝘭𝘦𝘋𝘪𝘴𝘤𝘰𝘳𝘥𝘊𝘳𝘺𝘱𝘵`";
-    // }
-    // else {
-        // message.content = "";
-        // message.embed = {
-        //     color: BaseColorInt,
-        //     author: {
-        //         name: "-----ENCRYPTED MESSAGE-----",
-        //         icon_url: "https://i.imgur.com/pFuRfDE.png",
-        //         url: "http://gitlab.com/An0/SimpleDiscordCrypt"
-        //     },
-        //     description: payload,
-        //     footer: {
-        //         text: "𝘚𝘪𝘮𝘱𝘭𝘦𝘋𝘪𝘴𝘤𝘰𝘳𝘥𝘊𝘳𝘺𝘱𝘵",
-        //         icon_url: "https://i.imgur.com/zWXtTpX.png",
-        //     }
-        // };
-    // }
-
-    messageExtras(content);
-   
+    let channel = Discord.getChannel(channelId);
+    if(forceSimple || Cache.channelBlacklist === 2 || (channel.type === 0 && !Discord.can(EMBED_LINKS_CHECK, Discord.getCurrentUser(), channel))) {
+       message.content = payload + " `𝘚𝘪𝘮𝘱𝘭𝘦𝘋𝘪𝘴𝘤𝘰𝘳𝘥𝘊𝘳𝘺𝘱𝘵`";
+    }
+    else {
+        message.content = "";
+        message.embed = {
+            color: BaseColorInt,
+            author: {
+                name: "-----ENCRYPTED MESSAGE-----",
+                icon_url: "https://i.imgur.com/pFuRfDE.png",
+                url: "http://gitlab.com/An0/SimpleDiscordCrypt"
+            },
+            description: payload,
+            footer: {
+                text: "𝘚𝘪𝘮𝘱𝘭𝘦𝘋𝘪𝘴𝘤𝘰𝘳𝘥𝘊𝘳𝘺𝘱𝘵",
+                icon_url: "https://i.imgur.com/zWXtTpX.png",
+            }
+        };
+    }
     return key;
-}
-
-async function messageExtras(content) {
-    if (content.includes("nigg")) {
-        document.querySelector(ChatInputSelector).style.backgroundColor = "red"
-        setTimeout(() => {
-            document.querySelector(ChatInputSelector).style.backgroundColor = "var(--channeltextarea-background)"
-        }, 500)
-    }
-    if (content === "fucking roll it") {
-        const a = "-webkit-"
-        const b = "transform: rotate(1turn);"
-        const c = "transition: 3s;"
-        const style = document.createElement("style")
-        style.innerHTML = `body { ${a + b + a + c + b + c} }`
-        document.head.appendChild(style)
-        setTimeout(() => style.remove(), 3010)
-    }
-    if (content === "i want to die") {
-        const images = [
-            "https://cdn.discordapp.com/emojis/756532947481264201.png?size=64",
-            "https://cdn.discordapp.com/emojis/871514264408567868.png?size=64",
-            "https://cdn.discordapp.com/emojis/780291694259208250.png?size=64",
-            "https://cdn.discordapp.com/emojis/791250382315454494.png?size=64",
-            "https://cdn.discordapp.com/emojis/773072900528930826.png?size=64"
-        ]
-        for (let i = 0; i < 10; i++) {
-            const image = document.createElement("img")
-            image.src = images[Math.floor(Math.random() * images.length)]
-            image.style.position = "absolute"
-            image.style.top = "0px"
-            image.style.left = `${Math.floor(Math.random() * (window.innerWidth - 64 * 3)) + 64}px`
-            image.style.zIndex = "999999"
-            image.style.transition = "all 2s ease-in"
-            document.body.appendChild(image)
-            setTimeout(() => {
-                image.style.transform = `translateY(${window.innerHeight}px)`
-            }, 10)
-            setTimeout(() => image.remove(), 2500)
-            await new Promise(r => setTimeout(r, Math.random() * 500))
-        }
-    }
-    if (content.includes("pump it") || content.includes("send it")) {
-        const images = [
-            "https://cdn.discordapp.com/emojis/682021196723912704.png?size=64",
-            "https://cdn.discordapp.com/emojis/738104313808814180.png?size=64",
-            "https://cdn.discordapp.com/emojis/791230679450910751.png?size=64",
-            "https://cdn.discordapp.com/emojis/873286973194907658.png?size=64",
-            "https://cdn.discordapp.com/emojis/778353962683334677.png?size=64",
-            "https://cdn.discordapp.com/emojis/790657431352639519.png?size=64"
-        ]
-        for (let i = 0; i < 10; i++) {
-            const image = document.createElement("img")
-            image.src = images[Math.floor(Math.random() * images.length)]
-            image.style.position = "absolute"
-            image.style.top = "0px"
-            image.style.left = `${Math.floor(Math.random() * (window.innerWidth - 64 * 3)) + 64}px`
-            image.style.zIndex = "999999"
-            image.style.transition = "all 2s ease-in"
-            document.body.appendChild(image)
-            setTimeout(() => {
-                image.style.transform = `translateY(${window.innerHeight}px)`
-            }, 10)
-            setTimeout(() => image.remove(), 2500)
-            await new Promise(r => setTimeout(r, Math.random() * 500))
-        }
-    }
-    if (content.startsWith("whats the price of ")) {
-        const aliases = {
-            "BITCOIN": "BTC",
-            "ETHEREUM": "ETH",
-            "UNISWAP": "UNI",
-            "DOGECOIN": "DOGE",
-            "CURVE": "CRV",
-            "MAKER": "MKR",
-            "KYBER": "KNC"
-        }
-        const target = content.slice("whats the price of ".length).toUpperCase()
-        if (!target.match(/\s/)) {
-            const ticker = aliases[target] || target
-            try {
-                const { price } = await fetch(`https://api.binance.com/api/v3/ticker/price?symbol=${ticker}USDT`).then(res => res.json())
-                const text = document.createElement("div")
-                text.innerText = `$${(+price).toLocaleString(undefined, {
-                    maximumFractionDigits: +price < 100 ? 4 : 2,
-                    minimumFractionDigits: +price < 100 ? 4 : 2
-                })}`
-                text.style.fontSize = "64px"
-                text.style.color = "#FFFFFF"
-                text.style.position = "absolute"
-                text.style.top = "0px"
-                text.style.left = `${Math.floor(Math.random() * (window.innerWidth - 64 * 3)) + 64}px`
-                text.style.zIndex = "999999"
-                text.style.transition = "all 2s ease-in"
-                document.body.appendChild(text)
-                setTimeout(() => {
-                    text.style.transform = `translateY(${window.innerHeight}px)`
-                }, 10)
-                setTimeout(() => text.remove(), 2500)
-            } catch {}
-        }
-    }
 }
 
 const filenameLimit = 47;
@@ -4163,7 +3934,8 @@ function Unload()
 var InitTries = 200;
 function TryInit()
 {
-    if(Init(--InitTries > 0) !== 0) return;
+    let final = --InitTries === 0;
+    if(Init(final) !== 0 || final) return;
 
     window.setTimeout(TryInit, 100);
 };
