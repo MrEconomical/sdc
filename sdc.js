@@ -3142,8 +3142,8 @@ async function decryptMessage(message, payload, ignoreAttachments) {
     message.embeds = []; //remove embeds in case of edit and in case of the payload is from the embed
 
     if(payloadBuffer.byteLength === 16) {
-        if(!differentKey) message.content = "<:ENC:465534298662109185>⁣"; //invisible separator at the end to make the emoji smaller
-        else message.content = `<:ENC_${differentKeyDesc}:611264394747183115>⁣`;
+        if(!differentKey) message.content = "<:ENC:869436702261932032>⁣"; //invisible separator at the end to make the emoji smaller
+        else message.content = `<:ENC_${differentKeyDesc}:869436702014443561>⁣`;
     }
     else {
         let content;
@@ -3156,9 +3156,9 @@ async function decryptMessage(message, payload, ignoreAttachments) {
             message.attachments = [];
             return false;
         }
-        if(!differentKey) message.content = "<:ENC:465534298662109185>" + content;
-        else message.content = `<:ENC_${differentKeyDesc}:611264394747183115>` + content;
-        //message.content = content.replace(/^/gm, "<:ENC:465534298662109185>"); //bad for code blocks
+        if(!differentKey) message.content = "<:ENC:869436702261932032>" + content;
+        else message.content = `<:ENC_${differentKeyDesc}:869436702014443561>` + content;
+        //message.content = content.replace(/^/gm, "<:ENC:869436702261932032>"); //bad for code blocks
         postProcessMessage(message, content);
     }
 
