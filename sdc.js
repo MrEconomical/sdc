@@ -2875,8 +2875,36 @@ async function decryptAttachment(key, keyHash, message, attachment, channelConfi
     }
 }
 
+async function embedGeneral(message, url, queryString) {
+    const data = await fetch(`https://og.mreconomical.repl.co/fetch?site=${url}`).then(res => res.json())
+    if (!data.ogTitle && !data.title && !data.ogDescription && !data.description) return
+    const embed = {
+        color: parseColor(data.themeColor),
+        provider: {
+            name: data.host,
+            url: `${url.startsWith("https") ? "https" : "http"}://${data.host}`
+        },
+        title: data.ogTitle || data.title,
+        description: data.ogDescription || data.description,
+        url
+    }
+    if (data.ogImage) {
+        const imageUrl = encodeURIComponent(data.ogImage)
+        try {
+            const { width, height } = await fetch(`https://og.mreconomical.repl.co/imageSize?url=${imageUrl}`).then(res => res.json())
+            embed.thumbnail = {
+                width,
+                height,
+                url: `https://og.mreconomical.repl.co/image?url=${imageUrl}`
+            }
+        } catch {}
+    }
+    message.embeds.push(embed)
+    Discord.dispatch({type: 'MESSAGE_UPDATE', message})
+}
 const starttimeRegex = /(?:(\d+)h)?(?:(\d+)m)?(?:(\d+)s)?/;
-function createYoutubeEmbed(id, timequery) {
+async function createYoutubeEmbed(message, id, timequery) {
+    let url = `https://youtube.com/watch?v=${id}`
     let embedUrl = `https://youtube.com/embed/${id}`;
     if(timequery != null) {
         let time = timequery.split('=')[1];
@@ -2886,24 +2914,117 @@ function createYoutubeEmbed(id, timequery) {
         if(timeMatch[2] !== undefined) t += timeMatch[2] * 60;
         if(timeMatch[3] !== undefined) t += parseInt(timeMatch[3]);
         if(t !== 0) time = t;
+        url += "&start=" + time
         embedUrl += "?start=" + time;
     }
-    return {
+    const data = await fetch(`https://og.mreconomical.repl.co/fetch?site=${url}`).then(res => res.json())
+    if (!data.ogTitle) return
+    message.embeds.push({
         type: 'video',
-        url: `https://youtube.com/watch?v=${id}`,
+        color: 0xFF0000,
+        provider: {
+            name: 'YouTube',
+            url: 'https://youtube.com'
+        },
+        title: data.ogTitle,
+        url,
         thumbnail: { url: `https://i.ytimg.com/vi/${id}/maxresdefault.jpg`, width: 1280, height: 720 },
         video: { url: embedUrl, width: 1280, height: 720 }
-    }
+    })
+    Discord.dispatch({type: 'MESSAGE_UPDATE', message})
 }
 const youtubeRegex = /[?&]v=([\w-]+).*?(&(?:t|start)=[\dhms]+)?/;
 function embedYoutube(message, url, queryString) {
     let match = youtubeRegex.exec(queryString);
-    if(match != null) message.embeds.push(createYoutubeEmbed(match[1], match[2]));
+    if(match != null) {
+        createYoutubeEmbed(message, match[1], match[2]);
+    } else {
+        embedGeneral(message, url, queryString);
+    }
 }
 const youtuRegex = /^([\w-]+).*?(\?(?:t|start)=[\dhms]+)?/;
 function embedYoutu(message, url, queryString) {
-    let match = youtuRegex.exec(queryString);
-    if(match != null) message.embeds.push(createYoutubeEmbed(match[1], match[2]));
+    let match = youtuRegex.exec(queryString.slice(1));
+    if(match != null) {
+        createYoutubeEmbed(message, match[1], match[2]);
+    } else {
+        embedGeneral(message, url, queryString);
+    }
+}
+async function embedTwitter(message, url, queryString) {
+    if (!queryString.includes("/status/")) {
+        embedGeneral(message, url, queryString)
+        return
+    }
+    const data = await fetch(`https://og.mreconomical.repl.co/twitter?link=${url}`).then(res => res.json())
+    const authorUrl = data.oEmbed.author_url
+    const embed = {
+        type: "rich",
+        color: 0x1DA1F2,
+        author: {
+            name: `${data.oEmbed.author_name} (@${authorUrl.slice(authorUrl.lastIndexOf("/") + 1)})`,
+            url: authorUrl
+        },
+        description: data.open_graph.description.slice(1, -1),
+        footer: {
+            text: 'Twitter',
+            icon_url: 'https://abs.twimg.com/icons/apple-touch-icon-192x192.png'
+        }
+    }
+    if (data.open_graph.images.length) {
+        try {
+            const imageUrl = encodeURIComponent(data.open_graph.images[0].url)
+            if (!imageUrl.includes("profile_images")) {
+                const { width, height } = await fetch(`https://og.mreconomical.repl.co/imageSize?url=${imageUrl}`).then(res => res.json())
+                embed.image = {
+                    width,
+                    height,
+                    url: `https://og.mreconomical.repl.co/image?url=${imageUrl}`
+                }
+            }
+        } catch {}
+    }
+    message.embeds.push(embed)
+    Discord.dispatch({type: 'MESSAGE_UPDATE', message})
+}
+function parseColor(color) {
+    if (typeof color !== "string") return
+    if (color.startsWith("#")) {
+        return Number(color.slice(1))
+    } else if (color.startsWith("rgb") || color.startsWith("rgba")) {
+        const values = /rgba?\((\d+), ?(\d+), ?(\d+)/g.exec(color)
+        return Number(`0x${(+values[1]).toString(16).padStart(2, "0")}${(+values[2]).toString(16).padStart(2, "0")}${(+values[3]).toString(16).padStart(2, "0")}`)
+    }
+}
+async function embedTenor(message, url, queryString) {
+    if (!queryString.startsWith("/view/")) {
+        embedGeneral(message, url, queryString)
+        return
+    }
+    const data = await fetch(`https://og.mreconomical.repl.co/fetch?site=${url}`).then(res => res.json())
+    message.embeds.push({
+        type: "image",
+        url: data.ogImage,
+        thumbnail: {
+            url: data.ogImage,
+            width: data.ogImageWidth,
+            height: data.ogImageHeight
+        }
+    })
+    Discord.dispatch({type: 'MESSAGE_UPDATE', message})
+}
+async function embedTenorShort(message, url, queryString) {
+    const { width, height } = await fetch(`https://og.mreconomical.repl.co/imageSize?url=${url}`).then(res => res.json())
+    message.embeds.push({
+        type: "image",
+        url,
+        thumbnail: {
+            url,
+            width,
+            height
+        }
+    })
+    Discord.dispatch({type: 'MESSAGE_UPDATE', message})
 }
 const imageRegex = /^[^?]*\.(?:png|jpe?g|gif|webp)(?:$|\?)/i;
 function embedImage(message, url, queryString) {
@@ -2974,11 +3095,17 @@ function embedSoundcloud(message, url, queryString) {
         embedEncrypted(message, "https://w.soundcloud.com/player/?visual=true&url=" + encodeURIComponent(url), null);
 }
 const linkEmbedders = {
+    GENERAL: embedGeneral,
     "www.youtube.com": embedYoutube,
+    "youtube.com": embedYoutube,
     "youtu.be": embedYoutu,
+    "www.twitter.com": embedTwitter,
+    "twitter.com": embedTwitter,
     "cdn.discordapp.com": embedImage,
     "media.discordapp.net": embedImage,
-    "i.imgur.com": embedImage
+    "i.imgur.com": embedImage,
+    "tenor.com": embedTenor,
+    "c.tenor.com": embedTenorShort
 };
 if(FixedCsp) Object.assign(linkEmbedders, {
     "i.redd.it": embedImage,
@@ -2990,7 +3117,7 @@ if(FixedCsp) Object.assign(linkEmbedders, {
 const MENTION_EVERYONE_CHECK = 0x20000n;
 const everyoneRegex = /(?<!https?:\/\/[^\s]*)@(?:everyone|here)/;
 const roleMentionRegex = /<@&(\d{16,20})>/g;
-const urlRegex = /(?:<https?:\/\/(?:[^\s\/?\.#]+\.)+(?:[^\s\/?\.#]+)\/[^\s<>'"]+>|https?:\/\/((?:[^\s\/?\.#]+\.)+(?:[^\s\/?\.#]+))\/([^\s<>'"]+))/g;
+const urlRegex = /(https?:\/\/((?:[^\s\/]+\.)+[^\/\s]+)(\/[\S]+.)?)/g;
 function postProcessMessage(message, content) {
     let currentUser = Discord.getCurrentUser();
     if(content.includes(`<@${currentUser.id}>`) || content.includes(`<@!${currentUser.id}>`)) {
@@ -3025,12 +3152,23 @@ function postProcessMessage(message, content) {
         }
     }
 
+    const url = urlRegex.exec(content);
+    if (url && message.flags !== 4) {
+        let linkEmbedder = linkEmbedders[url[2]];
+        if(linkEmbedder != null) {
+            linkEmbedder(message, url[1], url[3] || "");
+        } else {
+            linkEmbedders.GENERAL(message, url[1], url[3] || "");
+        }
+    }
+    /*
     let url;
     while((url = urlRegex.exec(content)) != null && url[1] != null) {
         let linkEmbedder = linkEmbedders[url[1]];
         if(linkEmbedder != null) linkEmbedder(message, url[0], url[2]);
     }
     urlRegex.lastIndex = 0;
+    */
 }
 
 let keywaitingMessages = {};
