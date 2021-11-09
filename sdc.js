@@ -3615,7 +3615,7 @@ function handleDeletes(event) {
 
 const EMBED_LINKS_CHECK = 0x4000n;
 const prefixRegex = /^(?::?ENC(?:(?:_\w*)?:|\b)|<:ENC:\d{1,20}>)\s*/;
-const noencprefixRegex = /^(?::?NOENC:?|<:NOENC:\d{1,20}>)\s*/; //not really expecting an emoji
+const noencprefixRegex = /^(?::?NEC:?|<:NEC:\d{1,20}>)\s*/; //not really expecting an emoji
 async function handleSend(channelId, message, forceSimple) {
     let channelConfig = Utils.GetChannelConfig(channelId);
     let content = message.content;
