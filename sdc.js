@@ -3639,9 +3639,9 @@ async function handleSend(channelId, message, forceSimple) {
     let payload = Utils.PayloadEncode(messageBytes);
 
     let channel = Discord.getChannel(channelId);
-    if(forceSimple || Cache.channelBlacklist === 2 || (channel.type === 0 && !Discord.can(EMBED_LINKS_CHECK, Discord.getCurrentUser(), channel))) {
+    //if(forceSimple || Cache.channelBlacklist === 2 || (channel.type === 0 && !Discord.can(EMBED_LINKS_CHECK, Discord.getCurrentUser(), channel))) {
        message.content = payload + " `𝘚𝘪𝘮𝘱𝘭𝘦𝘋𝘪𝘴𝘤𝘰𝘳𝘥𝘊𝘳𝘺𝘱𝘵`";
-    }
+    /*}
     else {
         message.content = "";
         message.embed = {
@@ -3657,7 +3657,7 @@ async function handleSend(channelId, message, forceSimple) {
                 icon_url: "https://i.imgur.com/zWXtTpX.png",
             }
         };
-    }
+    }*/
     return key;
 }
 
