@@ -2870,6 +2870,22 @@ async function decryptAttachment(key, keyHash, message, attachment, channelConfi
 async function embedGeneral(message, url, queryString) {
     const data = await fetch(`https://og.mreconomical.repl.co/fetch?site=${url}`).then(res => res.json())
     if (!data.ogTitle && !data.title && !data.ogDescription && !data.description) return
+    if (data.file && data.file.mime && data.file.mime.startsWith("image")) {
+        try {
+            const { width, height } = await fetch(`https://og.mreconomical.repl.co/imageSize?url=${url}`).then(res => res.json())
+            message.embeds.push({
+                type: "image",
+                url,
+                thumbnail: {
+                    url,
+                    width,
+                    height
+                }
+            })
+            Discord.dispatch({type: 'MESSAGE_UPDATE', message})
+            return
+        } catch {}
+    }
     const embed = {
         color: parseColor(data.themeColor),
         provider: {
