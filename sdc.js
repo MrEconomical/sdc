@@ -2869,12 +2869,8 @@ async function decryptAttachment(key, keyHash, message, attachment, channelConfi
 
 async function embedGeneral(message, url, queryString) {
     const data = await fetch(`https://og.mreconomical.repl.co/fetch?site=${url}`).then(res => res.json())
-    console.log("general embed data:", data)
-    console.log(data.file)
-    console.log(data.file.mime)
     if (data.file && data.file.mime && data.file.mime.startsWith("image")) {
         try {
-            console.log("fetching width and height")
             const { width, height } = await fetch(`https://og.mreconomical.repl.co/imageSize?url=${url}`).then(res => res.json())
             message.embeds.push({
                 type: "image",
