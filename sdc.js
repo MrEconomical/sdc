@@ -829,12 +829,12 @@ const MenuBar = {
             if(keySelectDropdown.checked) dropdownOn();
             else dropdownOff();
         };
-        keySelectDropdown.onblur = () => { setTimeout(() => { //:active in FF is only valid after the event
-            if(!keySelectDropdown.matches(':active')) {
+        keySelectDropdown.onblur = () => {
+            if(!keySelectDropdown.matches(':hover')) {
                 keySelectDropdown.checked = false;
                 dropdownOff()
             }
-        }, 0)};
+        };
 
         this.toggleOnButton.oncontextmenu = this.toggleOffButton.oncontextmenu = (e) => {
             e.preventDefault();
