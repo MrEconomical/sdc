@@ -40,10 +40,10 @@ const InactiveChannelTime = 7*24*60*60*1000; //1 week
 const IgnoreDiffKeyAge = 7*24*60*60*1000;
 const DiffKeyTrigger = 10;
 
-const HeaderBarSelector = `.title-3qD0b-`;
-const HeaderBarChildrenSelector = `.children-19S4PO`;
+const HeaderBarSelector = `.title-31SJ6t`;
+const HeaderBarChildrenSelector = `.children-3xh0VB`;
 const HeaderBarStatusSelector = `.status-1XNdyw`;
-const HeaderBarChannelNameSelector = `.title-3qD0b- .title-29uC1r, .title-3qD0b- .channelName-qsg_a_`;
+const HeaderBarChannelNameSelector = `.title-31SJ6t .title-17SveM, .title-31SJ6t .channelName-qsg_a_`;
 const BackdropSelector = `div[class*="backdrop"]`;
 const ModalClass = 'layer-2KE1M9';
 const ImageWrapperImgSelector = `.imageWrapper-2p5ogY > img`;
