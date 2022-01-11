@@ -637,6 +637,8 @@ const KeyManagerWindow = {
         if(this.domElement) this.domElement.remove();
     }
 };
+window.KeyManagerWindow = KeyManagerWindow
+// global scope
 const ChannelManagerWindow = {
     html: `<div class="sdc">
 <div class="SDC_CLOSE sdc-cover"></div>
