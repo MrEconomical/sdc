@@ -1,11 +1,11 @@
 // ==UserScript==
-// @name         SimpleDiscordCrypt
-// @namespace    https://gitlab.com/An0/SimpleDiscordCrypt
-// @version      1.4.3.0
-// @description  I hope people won't start calling this SDC ^_^
-// @author       An0
+// @name         Better SimpleDiscordCrypt
+// @namespace    https://github.com/MrEconomical/sdc
+// @version      0.1
+// @description  do not use this
+// @author       MrEconomical
 // @license      LGPLv3 - https://www.gnu.org/licenses/lgpl-3.0.txt
-// @downloadURL  https://gitlab.com/An0/SimpleDiscordCrypt/raw/master/SimpleDiscordCrypt.user.js
+// @downloadURL  https://raw.githubusercontent.com/MrEconomical/sdc/main/sdc.js
 // @updateURL    https://gitlab.com/An0/SimpleDiscordCrypt/raw/master/SimpleDiscordCrypt.meta.js
 // @icon         https://gitlab.com/An0/SimpleDiscordCrypt/raw/master/logo.png
 // @match        https://*.discord.com/channels/*
@@ -22,6 +22,7 @@
 // @connect      gitlab.com
 // ==/UserScript==
 
+// Original by An0: https://gitlab.com/An0/SimpleDiscordCrypt
 // Credits for inspiration to the original DiscordCrypt
 
 (function() {
@@ -45,12 +46,12 @@ const HeaderBarChildrenSelector = `.children-3xh0VB`;
 const HeaderBarStatusSelector = `.status-1XNdyw`;
 const HeaderBarChannelNameSelector = `.title-31SJ6t .title-17SveM, .title-31SJ6t .channelName-qsg_a_`;
 const BackdropSelector = `div[class*="backdrop"]`;
-const ModalClass = 'layer-2KE1M9';
-const ImageWrapperImgSelector = `.imageWrapper-2p5ogY > img`;
+const ModalClass = 'layer-1Ixpg3';
+const ImageWrapperImgSelector = `.imageWrapper-oMkQl4 > img`;
 const ModalImgSelector = `.${ModalClass} ${ImageWrapperImgSelector}`;
-const MessageScrollerSelector = `.scroller-2LSbBU`;
-const ChatInputSelector = `.scrollableContainer-2NUZem`;
-const MessageImgSelector = `.message-2qnXI6 img`;
+const MessageScrollerSelector = `.scroller-kQBbkU`;
+const ChatInputSelector = `.scrollableContainer-15eg7h`;
+const MessageImgSelector = `.message-2CShn3 img`;
 const ChatImageSelector = `${MessageScrollerSelector} .imageZoom-1n-ADA img`;
 
 const htmlEscapeDiv = document.createElement('div');
