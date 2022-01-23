@@ -43,8 +43,8 @@ const DiffKeyTrigger = 10;
 
 const HeaderBarSelector = `.title-31SJ6t`;
 const HeaderBarChildrenSelector = `.children-3xh0VB`;
-const HeaderBarStatusSelector = `.status-1XNdyw`;
-const HeaderBarChannelNameSelector = `.title-31SJ6t .title-17SveM, .title-31SJ6t .channelName-qsg_a_`;
+const HeaderBarStatusSelector = `.status-12NUUC`;
+const HeaderBarChannelNameSelector = `.title-31SJ6t .title-17SveM, .title-31SJ6t .channelName-3aS_Eg`;
 const BackdropSelector = `div[class*="backdrop"]`;
 const ModalClass = 'layer-1Ixpg3';
 const ImageWrapperImgSelector = `.imageWrapper-oMkQl4 > img`;
@@ -52,7 +52,7 @@ const ModalImgSelector = `.${ModalClass} ${ImageWrapperImgSelector}`;
 const MessageScrollerSelector = `.scroller-kQBbkU`;
 const ChatInputSelector = `.scrollableContainer-15eg7h`;
 const MessageImgSelector = `.message-2CShn3 img`;
-const ChatImageSelector = `${MessageScrollerSelector} .imageZoom-1n-ADA img`;
+const ChatImageSelector = `${MessageScrollerSelector} .imageZoom-3yLCXY img`;
 
 const htmlEscapeDiv = document.createElement('div');
 function HtmlEscape(string) { htmlEscapeDiv.textContent = string; return htmlEscapeDiv.innerHTML; }
