@@ -1320,35 +1320,35 @@ function Init(final)
     modules.MessageQueue = findModuleByUniqueProperties([ 'enqueue', 'handleSend', 'handleEdit' ]);
     if(modules.MessageQueue == null) { if(final) Utils.Error("MessageQueue not found."); return 0; }
 
-    modules.MessageDispatcher = findModuleByUniqueProperties( [ 'dispatch', 'maybeDispatch', 'dirtyDispatch' ]);
+    modules.MessageDispatcher = findModuleByUniqueProperties([ 'dispatch', 'maybeDispatch', 'dirtyDispatch' ]);
     if(modules.MessageDispatcher == null) { if(final) Utils.Error("MessageDispatcher not found."); return 0; }
 
-    modules.UserCache = findModuleByUniqueProperties( [ 'getUser', 'getUsers', 'getCurrentUser' ]);
+    modules.UserCache = findModuleByUniqueProperties([ 'getUser', 'getUsers', 'getCurrentUser' ]);
     if(modules.UserCache == null) { if(final) Utils.Error("UserCache not found."); return 0; }
 
-    modules.ChannelCache = findModuleByUniqueProperties( [ 'getChannel', 'getMutableGuildChannels', 'getDMFromUserId' ]);
+    modules.ChannelCache = findModuleByUniqueProperties([ 'getChannel', 'getDMFromUserId' ]);
     if(modules.ChannelCache == null) { if(final) Utils.Error("ChannelCache not found."); return 0; }
 
-    modules.SelectedChannelStore = findModuleByUniqueProperties( [ 'getChannelId', 'getVoiceChannelId', 'getLastSelectedChannelId' ]);
+    modules.SelectedChannelStore = findModuleByUniqueProperties([ 'getChannelId', 'getVoiceChannelId', 'getLastSelectedChannelId' ]);
     if(modules.SelectedChannelStore == null) { if(final) Utils.Error("SelectedChannelStore not found."); return 0; }
 
-    modules.GuildCache = findModuleByUniqueProperties( [ 'getGuild', 'getGuilds' ]);
+    modules.GuildCache = findModuleByUniqueProperties([ 'getGuild', 'getGuilds' ]);
     if(modules.GuildCache == null) { if(final) Utils.Error("GuildCache not found."); return 0; }
 
-    modules.FileUploader = findModuleByUniqueProperties( [ 'upload', 'cancel', 'instantBatchUpload' ]);
+    modules.FileUploader = findModuleByUniqueProperties([ 'upload', 'cancel', 'instantBatchUpload' ]);
     if(modules.FileUploader == null) { if(final) Utils.Error("FileUploader not found."); return 0; }
 
-    modules.PermissionEvaluator = findModuleByUniqueProperties( [ 'can', 'computePermissions', 'canEveryone' ]);
+    modules.PermissionEvaluator = findModuleByUniqueProperties([ 'can', 'computePermissions', 'canEveryone' ]);
     if(modules.PermissionEvaluator == null) { if(final) Utils.Error("PermissionEvaluator not found."); return 0; }
 
-    modules.RelationshipStore = findModuleByUniqueProperties( [ 'isFriend', 'isBlocked', 'getFriendIDs' ]);
+    modules.RelationshipStore = findModuleByUniqueProperties([ 'isFriend', 'isBlocked', 'getFriendIDs' ]);
     if(modules.RelationshipStore == null) { if(final) Utils.Error("RelationshipStore not found."); return 0; }
 
-    modules.PrivateChannelManager = findModuleByUniqueProperties( [ 'openPrivateChannel', 'ensurePrivateChannel', 'closePrivateChannel' ]);
+    modules.PrivateChannelManager = findModuleByUniqueProperties([ 'openPrivateChannel', 'ensurePrivateChannel', 'closePrivateChannel' ]);
     if(modules.PrivateChannelManager == null) { if(final) Utils.Error("PrivateChannelManager not found."); return 0; }
 
-    modules.DiscordConstants = findModuleByUniqueProperties( [ 'SpotifyEndpoints' ]);
-    modules.Premium = findModuleByUniqueProperties( [ 'canUseEmojisEverywhere' ]);
+    modules.DiscordConstants = findModuleByUniqueProperties([ 'SpotifyEndpoints' ]);
+    modules.Premium = findModuleByUniqueProperties([ 'canUseEmojisEverywhere' ]);
 
     Discord.modules = modules;
 
@@ -2434,6 +2434,12 @@ function Init(final)
             mirrorFunction('Premium', 'canUseAnimatedEmojis');
             hookFunction('Premium', 'canUseAnimatedEmojis');
         }
+    }
+    if(modules.PendingReplyDispatcher != null && modules.PendingReplyDispatcher.createPendingReply != null) {
+        mirrorFunction('PendingReplyDispatcher', 'createPendingReply');
+    }
+    if(modules.MessageCache != null && modules.MessageCache.getMessage != null) {
+        mirrorFunction('MessageCache', 'getMessage');
     }
 
     Style.Inject();
@@ -3693,6 +3699,24 @@ async function encryptFilename(key, filename) {
     
     return encryptedFilename;
 }
+    
+function fixPendingReply(messageExtras) {
+    const messageReference = messageExtras?.messageReference;
+    
+    if(messageReference != null && Discord.getMessage != null && Discord.createPendingReply != null) {
+        const referencedMessage = Discord.getMessage(messageReference.channel_id, messageReference.message_id);
+        const referencedChannel = Discord.getChannel(messageReference.channel_id);
+
+        if(referencedMessage && referencedChannel) {
+            Discord.createPendingReply({
+                message: referencedMessage,
+                channel: referencedChannel,
+                shouldMention: messageExtras.allowedMentions?.replied_user != false,
+                showMentionToggle: true
+            });
+        }
+    }
+}
 
 async function handleUpload(channelId, file, draftType, message, spoiler, filename) {
     let key = await handleSend(channelId, message, true);
@@ -3716,7 +3740,7 @@ async function handleUpload(channelId, file, draftType, message, spoiler, filena
     return arguments;
 }
 
-async function handleUploadFiles(channelId, editableFiles, draftType, message, stickers) {
+async function handleUploadFiles(channelId, editableFiles, draftType, message, extras) {
     let key = await handleSend(channelId, message, true);
     if(key == null) return arguments;
 
@@ -3860,6 +3884,7 @@ function Load()
 
         let argumentsOverride = await handleUploadFiles.apply(null, arguments);
 
+        fixPendingReply(arguments[4]);
         Discord.original_uploadFiles.apply(this, argumentsOverride);
     })()};
 
