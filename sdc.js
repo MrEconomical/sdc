@@ -3869,7 +3869,7 @@ function Load()
 
     Discord.detour_dispatch = HandleDispatch;
 
-    Discord.detour_upload = function(params){(async () => {
+    /*Discord.detour_upload = function(params){(async () => {
 
         await handleUpload(params)
 
@@ -3886,7 +3886,7 @@ function Load()
 
         fixPendingReply(params.options);
         Discord.original_uploadFiles.apply(this, arguments);
-    })()};
+    })()};*/
 
     if(Discord.detour_EMBED != null) Discord.detour_EMBED = function(path, t) {
 
