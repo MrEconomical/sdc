@@ -1338,6 +1338,12 @@ function Init(final)
     modules.FileUploader = findModuleByUniqueProperties([ 'upload', 'cancel', 'instantBatchUpload' ]);
     if(modules.FileUploader == null) { if(final) Utils.Error("FileUploader not found."); return 0; }
 
+    modules.CloudUploadPrototype = findModuleByUniqueProperties([ 'CloudFileUpload' ])?.CloudFileUpload.prototype;
+    if(modules.CloudUploadPrototype == null) { if(final) Utils.Error("CloudFileUpload not found."); return 0; }
+
+    modules.CloudUploadHelper = findModule(x => x.ZP?.uploadToCloud && x.ZP.getUploadPayload)?.ZP;
+    if(modules.CloudUploadHelper == null) { if(final) Utils.Error("CloudUploadHelper not found."); return 0; }
+
     modules.PermissionEvaluator = findModuleByUniqueProperties([ 'can', 'computePermissions', 'canEveryone' ]);
     if(modules.PermissionEvaluator == null) { if(final) Utils.Error("PermissionEvaluator not found."); return 0; }
 
@@ -1971,6 +1977,8 @@ function Init(final)
                 Cache.channelConfig.e = Cache.channelConfig.e ? 0 : 1;
                 this.dbChanged = true;
             }
+
+            this.ClearCurrentChannelAttachments();
         },
         SetCurrentChannelKey: async function(hash) {
             if(Cache.channelConfig == null)
@@ -1984,6 +1992,8 @@ function Init(final)
                 Cache.channelConfig.k = hash;
                 this.dbChanged = true;
             }
+
+            this.ClearCurrentChannelAttachments();
         },
         SetChannelKey: function(channelId, hash) {
             let channelConfig = this.GetOrCreateChannelConfig(channelId);
@@ -2005,6 +2015,16 @@ function Init(final)
                 Cache.channelBlacklist = (guildId == null) ? null : Blacklist[guildId];
             }
             return true;
+        },
+        ClearChannelAttachments(channelId) {
+            Discord.dispatch({
+                type: 'UPLOAD_ATTACHMENT_CLEAR_ALL_FILES',
+                channelId,
+                draftType: 0
+            });
+        },
+        ClearCurrentChannelAttachments: function() {
+            this.ClearChannelAttachments(Cache.channelId);
         },
 
         SendSystemMessage: function(channelId, sysmsg) {
@@ -2385,9 +2405,10 @@ function Init(final)
         Discord[mirroredName] = originalFunction;
         Discord[functionName] = function() { return originalFunction.apply(module, arguments) };
     };
-    const hookFunction = (moduleName, functionName) => {
-        let detourName = `detour_${functionName}`;
-        let detourFunction = Discord[functionName];
+    const hookFunction = (moduleName, functionName, alias) => {
+        alias ??= functionName;
+        let detourName = `detour_${alias}`;
+        let detourFunction = Discord[alias];
         
         Object.defineProperty(Discord, detourName, {
             get: () => detourFunction,
@@ -2412,14 +2433,20 @@ function Init(final)
         mirrorFunction('PermissionEvaluator', 'can');
         mirrorFunction('RelationshipStore', 'isFriend');
         mirrorFunction('PrivateChannelManager', 'ensurePrivateChannel');
+        mirrorFunction('CloudUploadHelper', 'uploadToCloud');
+        mirrorFunction('CloudUploadHelper', 'getUploadPayload');
+        Discord.cloudUpload = modules.CloudUploadPrototype.upload;
+
+        hookFunction('MessageQueue', 'enqueue');
+        hookFunction('MessageDispatcher', 'dispatch');
+        hookFunction('FileUploader', 'upload');
+        hookFunction('FileUploader', 'instantBatchUpload');
+        hookFunction('FileUploader', 'uploadFiles');
+        hookFunction('CloudUploadHelper', 'uploadToCloud');
+        hookFunction('CloudUploadHelper', 'getUploadPayload');
+        hookFunction('CloudUploadPrototype', 'upload', 'cloudUpload');
     }
     catch(err) { Utils.Error(err); return -1; }
-
-    hookFunction('MessageQueue', 'enqueue');
-    hookFunction('MessageDispatcher', 'dispatch');
-    hookFunction('FileUploader', 'upload');
-    hookFunction('FileUploader', 'instantBatchUpload');
-    hookFunction('FileUploader', 'uploadFiles');
 
     if(modules.DiscordConstants != null && modules.DiscordConstants.SpotifyEndpoints != null) {
         let spotify = modules.DiscordConstants.SpotifyEndpoints;
@@ -2445,7 +2472,7 @@ function Init(final)
 
     Style.Inject();
 
-    LockMessages(true);
+    LockMessages();
     Utils.LoadDb(() => { Load(); UnlockMessages(true); ResolveInitPromise({ Load, Unload }) }, UnlockMessages);
 
     //convenience feature
@@ -3684,6 +3711,15 @@ async function handleSend(channelId, message, forceSimple) {
     return key;
 }
 
+async function getChannelKey(channelId) {
+    let channelConfig = Utils.GetChannelConfig(channelId);
+    if(channelConfig == null || !channelConfig.e || Cache.channelBlacklist === 1) {
+        return null;
+    }
+
+    return await Utils.GetKeyByHash(channelConfig.k);
+}
+
 const filenameLimit = 47;
 const filenameRegex = /^(.*?)((?:\.[^.]*)?)$/;
 async function encryptFilename(key, filename) {
@@ -3746,8 +3782,14 @@ async function handleUploadFiles(params) {
     let key = await handleSend(channelId, parsedMessage, true);
     if(key == null) return;
 
+    let encryptedUploads = [];
+    params.uploads = encryptedUploads;
+
     try {
         for (let editableFile of uploads) {
+            let encryptedFile = editableFile.ENCRYPTED_FILE;
+            if(encryptedFile == null) continue;
+
             let filename = editableFile.filename;
             if(editableFile.spoiler) {
                 editableFile.spoiler = false;
@@ -3755,18 +3797,16 @@ async function handleUploadFiles(params) {
             }
 
             let encryptedFilename = await encryptFilename(key, filename);
-            let fileBuffer = await Utils.ReadFile(editableFile.item.file);
-            let encryptedBuffer = await Utils.AesEncrypt(key, fileBuffer);
-            let encryptedFile = new File([encryptedBuffer], encryptedFilename);
 
             editableFile.filename = encryptedFilename;
             editableFile.item.file = encryptedFile;
             //TODO editableFile.description
+
+            encryptedUploads.push(editableFile);
         }
     }
     catch(err) {
         Utils.Error(err);
-        params.uploads = [];
     }
 }
 
@@ -3783,12 +3823,67 @@ async function handleInstantUploads(channelId, fileList, draftType) {
             let encryptedBuffer = await Utils.AesEncrypt(key, fileBuffer);
             let encryptedFile = new File([encryptedBuffer], encryptedFilename);
 
-            Discord.original_upload({ channelId, file: encryptedFile, draftType, message, hasSpoiler: false, filename: encryptedFilename });
+            Discord.upload({ channelId, file: encryptedFile, draftType, message, hasSpoiler: false, filename: encryptedFilename });
         }
     }
     catch(err) {
         Utils.Error(err);
     }
+}
+
+async function handleCloudUpload(channelId) {
+    let key = await getChannelKey(channelId);
+    if(key == null) return await Discord.cloudUpload.apply(this, arguments);
+
+    try {
+        let filename = this.filename;
+        let file = this.item.file;
+        let encryptedFilename = await encryptFilename(key, filename);
+        let fileBuffer = await Utils.ReadFile(file);
+        let encryptedBuffer = await Utils.AesEncrypt(key, fileBuffer);
+        let encryptedFile = new File([encryptedBuffer], encryptedFilename);
+
+        this.ENCRYPTED_FILE = encryptedFile;
+        
+        return await Discord.cloudUpload.apply(this, arguments);
+    }
+    catch(err) {
+        Utils.Error(err);
+    }
+}
+
+function handleGetUploadPayload(cloudFileUpload) {
+    let result = Discord.original_getUploadPayload.apply(this, arguments);
+
+    let encryptedFile = cloudFileUpload.ENCRYPTED_FILE;
+    if(encryptedFile != null) {
+        result.filename = encryptedFile.name;
+        result.file_size = encryptedFile.size;
+    }
+
+    return result;
+}
+
+async function handleUploadToCloud(cloudFileUpload, progressCallback) {
+    if(!cloudFileUpload.ENCRYPTED_FILE) {
+        return await Discord.original_uploadToCloud.apply(this, arguments);
+    }
+
+    let item = cloudFileUpload.item;
+    let originalFile = item.file;
+    item.file = cloudFileUpload.ENCRYPTED_FILE;
+
+    let resultPromise = Discord.original_uploadToCloud.apply(this, arguments);
+
+    item.file = originalFile;
+
+    return await resultPromise;
+}
+
+var clearAttachmentBlockedChannels = new Set();
+function handleClearAttachments(event) {
+    if(!clearAttachmentBlockedChannels.has(event.channelId))
+        Discord.original_dispatch.apply(this, arguments);
 }
 
 const eventHandlers = {
@@ -3802,12 +3897,13 @@ const eventHandlers = {
     'MESSAGE_CREATE': handleMessage,
     'MESSAGE_UPDATE': handleUpdate,
     'MESSAGE_DELETE': handleDelete,
-    'MESSAGE_DELETE_BULK': handleDeletes
+    'MESSAGE_DELETE_BULK': handleDeletes,
+    'UPLOAD_ATTACHMENT_CLEAR_ALL_FILES': handleClearAttachments
 }
 
 var messageLocks = [];
 var UnlockMessages;
-function LockMessages(initial) {
+function LockMessages() {
     Discord.detour_dispatch = function(event){(async () => {
         if(event.type === 'LOAD_MESSAGES_SUCCESS' || event.type === 'MESSAGE_CREATE' || event.type === 'MESSAGE_UPDATE') {
 
@@ -3856,8 +3952,6 @@ function HandleDispatch(event) {
 var dbSaveInterval;
 function Load()
 {
-    let modules = Discord.modules;
-
     Utils.RefreshCache();
 
     Discord.detour_enqueue = function(packet){(async () => {
@@ -3869,7 +3963,7 @@ function Load()
 
     Discord.detour_dispatch = HandleDispatch;
 
-    /*Discord.detour_upload = function(params){(async () => {
+    Discord.detour_upload = function(params){(async () => {
 
         await handleUpload(params)
 
@@ -3881,12 +3975,26 @@ function Load()
     };
 
     Discord.detour_uploadFiles = function(params){(async () => {
+        const channelId = params.channelId;
+        clearAttachmentBlockedChannels.add(channelId);
 
         await handleUploadFiles(params)
 
         fixPendingReply(params.options);
+
         Discord.original_uploadFiles.apply(this, arguments);
-    })()};*/
+
+        clearAttachmentBlockedChannels.delete(channelId);
+        Discord.dispatch({
+            type: 'UPLOAD_ATTACHMENT_CLEAR_ALL_FILES',
+            channelId,
+            draftType: 0
+        });
+    })()};
+
+    Discord.detour_cloudUpload = handleCloudUpload;
+    Discord.detour_getUploadPayload = handleGetUploadPayload;
+    Discord.detour_uploadToCloud = handleUploadToCloud;
 
     if(Discord.detour_EMBED != null) Discord.detour_EMBED = function(path, t) {
 
@@ -4130,6 +4238,10 @@ function Unload()
     restoreFunction('FileUploader', 'upload');
     restoreFunction('FileUploader', 'instantBatchUpload');
     restoreFunction('FileUploader', 'uploadFiles');
+    restoreFunction('CloudUploadHelper', 'uploadToCloud');
+    restoreFunction('CloudUploadHelper', 'getUploadPayload');
+    Discord.detour_cloudUpload = Discord.cloudUpload;
+
     if(Discord.detour_EMBED != null) restoreFunction('SpotifyEndpoints', 'EMBED');
     if(Discord.detour_canUseEmojisEverywhere != null) restoreFunction('Premium', 'canUseEmojisEverywhere');
     if(Discord.detour_canUseAnimatedEmojis != null) restoreFunction('Premium', 'canUseAnimatedEmojis');
