@@ -1320,7 +1320,7 @@ function Init(final)
     modules.MessageQueue = findModuleByUniqueProperties([ 'enqueue', 'handleSend', 'handleEdit' ]);
     if(modules.MessageQueue == null) { if(final) Utils.Error("MessageQueue not found."); return 0; }
 
-    modules.MessageDispatcher = findModuleByUniqueProperties([ 'dispatch', 'maybeDispatch', 'dirtyDispatch' ]);
+    modules.MessageDispatcher = findModuleByUniqueProperties([ 'dispatch', 'maybeDispatch' ]);
     if(modules.MessageDispatcher == null) { if(final) Utils.Error("MessageDispatcher not found."); return 0; }
 
     modules.UserCache = findModuleByUniqueProperties([ 'getUser', 'getUsers', 'getCurrentUser' ]);
