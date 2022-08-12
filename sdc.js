@@ -3831,8 +3831,8 @@ async function handleInstantUploads(channelId, fileList, draftType) {
     }
 }
 
-async function handleCloudUpload(channelId) {
-    let key = await getChannelKey(channelId);
+async function handleCloudUpload() {
+    let key = await getChannelKey(this.channelId);
     if(key == null) return await Discord.cloudUpload.apply(this, arguments);
 
     try {
