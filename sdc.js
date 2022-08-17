@@ -3864,7 +3864,7 @@ function handleGetUploadPayload(cloudFileUpload) {
     return result;
 }
 
-async function handleFileUploadToCloud() {
+async function handleUploadFileToCloud() {
     if (!this.ENCRYPTED_FILE) {
         return await Discord.original_uploadFileToCloud.apply(this, arguments);
     }
