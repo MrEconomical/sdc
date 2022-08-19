@@ -1355,6 +1355,8 @@ function Init(final)
 
     modules.DiscordConstants = findModuleByUniqueProperties([ 'SpotifyEndpoints' ]);
     modules.Premium = findModuleByUniqueProperties([ 'canUseEmojisEverywhere' ]);
+    modules.PendingReplyDispatcher = findModuleByUniqueProperties([ 'createPendingReply' ]);	
+    modules.MessageCache = findModuleByUniqueProperties([ 'getMessage', 'getMessages' ]);
 
     Discord.modules = modules;
 
@@ -2001,6 +2003,8 @@ function Init(final)
             if(hash === oldKeyHash) return;
             channelConfig.k = hash;
             this.dbChanged = true;
+            
+            this.ClearChannelAttachments(channelId);
         },
         GetCurrentChannelIsDm: () => Discord.getChannel(Cache.channelId).type === 1,
         GetCurrentDmUserId: () => Discord.getChannel(Cache.channelId).recipients[0],
