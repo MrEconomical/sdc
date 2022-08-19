@@ -3947,7 +3947,9 @@ async function LoadBlacklist() {
 function HandleDispatch(event) {
     let handler = eventHandlers[event.type];
     if(handler !== undefined) {
-        return handler.apply(this, arguments);
+        try {
+            return handler.apply(this, arguments);
+        } catch {}
     }
 
     Discord.original_dispatch.apply(this, arguments);
