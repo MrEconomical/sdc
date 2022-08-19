@@ -2629,7 +2629,9 @@ async function handleMessages(event) {
     for(let message of event.messages.slice()) //in case they reverse the array
         await processMessage(message);
 
-    Discord.original_dispatch.apply(this, arguments);
+    try {
+        Discord.original_dispatch.apply(this, arguments);
+    } catch {}
 }
 async function handleSearch(event) {
     for(let group of event.messages)
@@ -3947,9 +3949,7 @@ async function LoadBlacklist() {
 function HandleDispatch(event) {
     let handler = eventHandlers[event.type];
     if(handler !== undefined) {
-        try {
-            return handler.apply(this, arguments);
-        } catch {}
+        return handler.apply(this, arguments);
     }
 
     Discord.original_dispatch.apply(this, arguments);
