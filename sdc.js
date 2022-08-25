@@ -2631,9 +2631,7 @@ async function handleMessages(event) {
     for(let message of event.messages.slice()) //in case they reverse the array
         await processMessage(message);
 
-    try {
-        return await Discord.original_dispatch.apply(this, arguments);
-    } catch {}
+    return await Discord.original_dispatch.apply(this, arguments);
 }
 async function handleSearch(event) {
     for(let group of event.messages)
