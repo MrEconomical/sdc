@@ -3,7 +3,7 @@
 // @namespace    https://github.com/MrEconomical/sdc
 // @version      0.1
 // @description  do not use this
-// @author       MrEconomical
+// @author       MrEconomical / An0
 // @license      LGPLv3 - https://www.gnu.org/licenses/lgpl-3.0.txt
 // @downloadURL  https://raw.githubusercontent.com/MrEconomical/sdc/main/sdc.js
 // @updateURL    https://gitlab.com/An0/SimpleDiscordCrypt/raw/master/SimpleDiscordCrypt.meta.js
@@ -1320,7 +1320,7 @@ function Init(final)
     modules.MessageQueue = findModuleByUniqueProperties([ 'enqueue', 'handleSend', 'handleEdit' ]);
     if(modules.MessageQueue == null) { if(final) Utils.Error("MessageQueue not found."); return 0; }
 
-    modules.MessageDispatcher = findModuleByUniqueProperties([ 'dispatch', 'maybeDispatch' ]);
+    modules.MessageDispatcher = findModuleByUniqueProperties([ 'dispatch', 'wait' ]);
     if(modules.MessageDispatcher == null) { if(final) Utils.Error("MessageDispatcher not found."); return 0; }
 
     modules.UserCache = findModuleByUniqueProperties([ 'getUser', 'getUsers', 'getCurrentUser' ]);
@@ -1338,8 +1338,8 @@ function Init(final)
     modules.FileUploader = findModuleByUniqueProperties([ 'upload', 'cancel', 'instantBatchUpload' ]);
     if(modules.FileUploader == null) { if(final) Utils.Error("FileUploader not found."); return 0; }
 
-    modules.CloudUploadPrototype = findModuleByUniqueProperties([ 'CloudFileUpload' ])?.CloudFileUpload.prototype;
-    if(modules.CloudUploadPrototype == null) { if(final) Utils.Error("CloudFileUpload not found."); return 0; }
+    modules.CloudUploadPrototype = findModuleByUniqueProperties([ 'CloudUpload' ])?.CloudUpload.prototype;
+    if(modules.CloudUploadPrototype == null) { if(final) Utils.Error("CloudUpload not found."); return 0; }
 
     modules.CloudUploadHelper = findModule(x => x.ZP?.getUploadPayload)?.ZP;
     if(modules.CloudUploadHelper == null) { if(final) Utils.Error("CloudUploadHelper not found."); return 0; }
@@ -2020,6 +2020,7 @@ function Init(final)
             }
             return true;
         },
+
         ClearChannelAttachments(channelId) {
             Discord.dispatch({
                 type: 'UPLOAD_ATTACHMENT_CLEAR_ALL_FILES',
@@ -2302,6 +2303,7 @@ function Init(final)
             }
             else Discord.dispatch({type: 'MESSAGE_UPDATE', message});
         },
+
         Can: (permission, user, context) => Discord.can({ permission, user, context })
     });
 //Discord.window.SdcUtils = Utils;
@@ -2623,14 +2625,14 @@ function Init(final)
 
 async function handleMessage(event) {
     if(!await processMessage(event.message))
-        Discord.original_dispatch.apply(this, arguments);
+        return await Discord.original_dispatch.apply(this, arguments);
 }
 async function handleMessages(event) {
     for(let message of event.messages.slice()) //in case they reverse the array
         await processMessage(message);
 
     try {
-        Discord.original_dispatch.apply(this, arguments);
+        return await Discord.original_dispatch.apply(this, arguments);
     } catch {}
 }
 async function handleSearch(event) {
@@ -2638,7 +2640,7 @@ async function handleSearch(event) {
         for(let message of group)
             await processMessage(message);
 
-    Discord.original_dispatch.apply(this, arguments);
+    return await Discord.original_dispatch.apply(this, arguments);
 }
 async function handleUpdate(event) {
     let message = event.message;
@@ -2650,7 +2652,7 @@ async function handleUpdate(event) {
     }
 
     if(!await processMessage(message))
-        Discord.original_dispatch.apply(this, arguments);
+        return await Discord.original_dispatch.apply(this, arguments);
 }
 
 const messageRegex = /^([⠀-⣿]{16,}) `(?:SimpleDiscordCrypt|𝘚𝘪𝘮𝘱𝘭𝘦𝘋𝘪𝘴𝘤𝘰𝘳𝘥𝘊𝘳𝘺𝘱𝘵)`$/;
@@ -3620,7 +3622,7 @@ async function processEmbeds(message, ignoreAttachments) {
         return await decryptMessage(message, embed.description, ignoreAttachments);
     }
     else if(embed.author.name === "-----SYSTEM MESSAGE-----") {
-        processUpdateSystemMessage(message, embed.description);
+        processUpdateSystemMessage(message, embed.description)
     }
 }
 
@@ -3641,16 +3643,16 @@ function handleChannelSelect(event) {
         //Update after event is processed by Discord
     }
 
-    Discord.original_dispatch.apply(this, arguments);
+    return Discord.original_dispatch.apply(this, arguments);
 }
 
 function handleDelete(event) {
     Utils.MessageDeleteEvent(event.id);
-    Discord.original_dispatch.apply(this, arguments);
+    return Discord.original_dispatch.apply(this, arguments);
 }
 function handleDeletes(event) {
     Utils.MessageDeleteBulkEvent(event.ids);
-    Discord.original_dispatch.apply(this, arguments);
+    return Discord.original_dispatch.apply(this, arguments);
 }
 
 const EMBED_LINKS_CHECK = 0x4000n;
@@ -3763,6 +3765,7 @@ function fixPendingReply(messageOptions) {
 
 async function handleUpload(params) {
     let { channelId, file, message, hasSpoiler, filename } = params;
+
     let key = await handleSend(channelId, message, true);
     if(key == null) return;
 
@@ -3785,6 +3788,7 @@ async function handleUpload(params) {
 
 async function handleUploadFiles(params) {
     let { channelId, uploads, parsedMessage } = params;
+
     let key = await handleSend(channelId, parsedMessage, true);
     if(key == null) return;
 
@@ -3871,7 +3875,7 @@ function handleGetUploadPayload(cloudFileUpload) {
 }
 
 async function handleUploadFileToCloud() {
-    if (!this.ENCRYPTED_FILE) {
+    if(!this.ENCRYPTED_FILE) {
         return await Discord.original_uploadFileToCloud.apply(this, arguments);
     }
 
@@ -3889,7 +3893,7 @@ async function handleUploadFileToCloud() {
 var clearAttachmentBlockedChannels = new Set();
 function handleClearAttachments(event) {
     if(!clearAttachmentBlockedChannels.has(event.channelId))
-        Discord.original_dispatch.apply(this, arguments);
+        return Discord.original_dispatch.apply(this, arguments);
 }
 
 const eventHandlers = {
@@ -3915,10 +3919,10 @@ function LockMessages() {
 
             await new Promise((resolve) => { messageLocks.push(resolve) });
 
-            return Discord.detour_dispatch.apply(this, arguments);
+            return await Discord.detour_dispatch.apply(this, arguments);
         }
 
-        Discord.original_dispatch.apply(this, arguments);
+        return await Discord.original_dispatch.apply(this, arguments);
     })()};
 
     UnlockMessages = (lifted) => {
@@ -3952,7 +3956,7 @@ function HandleDispatch(event) {
         return handler.apply(this, arguments);
     }
 
-    Discord.original_dispatch.apply(this, arguments);
+    return Discord.original_dispatch.apply(this, arguments);
 }
 
 var dbSaveInterval;
@@ -3971,7 +3975,7 @@ function Load()
 
     Discord.detour_upload = function(params){(async () => {
 
-        await handleUpload(params)
+        await handleUpload(params);
 
         Discord.original_upload.apply(this, arguments);
     })()};
@@ -3984,7 +3988,7 @@ function Load()
         const channelId = params.channelId;
         clearAttachmentBlockedChannels.add(channelId);
 
-        await handleUploadFiles(params)
+        await handleUploadFiles(params);
 
         fixPendingReply(params.options);
 
