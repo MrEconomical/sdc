@@ -44,7 +44,7 @@ const DiffKeyTrigger = 10;
 const HeaderBarSelector = `.title-31SJ6t`;
 const HeaderBarChildrenSelector = `.children-3xh0VB`;
 const HeaderBarStatusSelector = `.status-12NUUC`;
-const HeaderBarChannelNameSelector = `.title-31SJ6t .title-17SveM, .title-31SJ6t .channelName-3aS_Eg`;
+const HeaderBarChannelNameSelector = `.title-31SJ6t .titleWrapper-24Kyzc, .title-31SJ6t .channelName-3aS_Eg`;
 const BackdropSelector = `div[class*="backdrop"]`;
 const ModalClass = 'layer-1Ixpg3';
 const ImageWrapperImgSelector = `.imageWrapper-oMkQl4 > img`;
