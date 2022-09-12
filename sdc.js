@@ -3001,18 +3001,21 @@ async function embedTwitter(message, url, queryString) {
         return
     }
     const data = await fetch(`https://og.mreconomical.repl.co/twitter?link=${url}`).then(res => res.json())
-    const authorUrl = data.oEmbed.author_url
     const embed = {
         type: "rich",
         color: 0x1DA1F2,
-        author: {
-            name: `${data.oEmbed.author_name} (@${authorUrl.slice(authorUrl.lastIndexOf("/") + 1)})`,
-            url: authorUrl
-        },
+        title: data.open_graph.title,
         description: data.open_graph.description.slice(1, -1),
         footer: {
             text: 'Twitter',
             icon_url: 'https://abs.twimg.com/icons/apple-touch-icon-192x192.png'
+        }
+    }
+    if (data.oEmbed) {
+        const authorUrl = data.oEmbed.author_url
+        embed.author = {
+            name: `${data.oEmbed.author_name} (@${authorUrl.slice(authorUrl.lastIndexOf("/") + 1)})`,
+            url: authorUrl
         }
     }
     if (data.open_graph.images.length) {
