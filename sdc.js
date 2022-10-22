@@ -1244,8 +1244,11 @@ var Utils = {
 
         let webpackExports;
 
-        if(typeof BdApi !== "undefined" && BdApi?.findModuleByProps && BdApi?.findModule) {
-            return this.cachedWebpack = { findModule: BdApi.findModule, findModuleByUniqueProperties: (props) => BdApi.findModuleByProps.apply(null, props) };
+            if(typeof BdApi !== "undefined" && BdApi?.Webpack) {
+                const getModuleOptions = { searchExports: true };
+                const { getModule } = BdApi.Webpack;
+                const findModule = (filter) => getModule(filter, getModuleOptions);
+                return this.cachedWebpack = { findModule, findModuleByUniqueProperties: (propNames) => findModule(module => propNames.every(prop => module[prop] !== undefined)) };
         }
         else if(Discord.window.webpackChunkdiscord_app != null) {
             const ids = ['__extra_id__'];
