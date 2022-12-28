@@ -65,7 +65,7 @@ ${HeaderBarStatusSelector} { margin-left: 10px }
 ${HeaderBarChildrenSelector} { mask-image: none !important; -webkit-mask-image: none !important }
 /*style*/
 .sdc * {
-    font-family: Whitney,Helvetica Neue,Helvetica,Arial,sans-serif;
+    font-family: var(--font-primary);
     font-size: 16px;
     font-weight: normal;
     line-height: 1;
