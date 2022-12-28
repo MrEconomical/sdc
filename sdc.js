@@ -2031,6 +2031,7 @@ function Init(final)
         GetCurrentDmUserId: () => Discord.getChannel(Cache.channelId).recipients[0],
         RefreshCache: () => {
             Cache.channelId = Discord.getChannelId();
+            if (!DataBase?.channels || !Cache?.channelId) return false;
             Cache.channelConfig = DataBase.channels[Cache.channelId];
             if(Cache.channelConfig != null) Cache.channelConfig.l = Date.now();
             if(Blacklist != null) {
