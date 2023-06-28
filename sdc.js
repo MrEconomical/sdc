@@ -46,7 +46,7 @@ const HeaderBarChildrenSelector = `.children-3xh0VB`;
 const HeaderBarStatusSelector = `.status-12NUUC`;
 const HeaderBarChannelNameSelector = `.title-31SJ6t .titleWrapper-24Kyzc, .title-31SJ6t .channelName-3aS_Eg`;
 const BackdropSelector = `div[class*="backdrop"]`;
-const ModalClass = 'layer-1Ixpg3';
+const ModalClass = 'layer-fP3xEz';
 const ImageWrapperImgSelector = `.imageWrapper-oMkQl4 > img`;
 const ModalImgSelector = `.${ModalClass} ${ImageWrapperImgSelector}`;
 const MessageScrollerSelector = `.scroller-kQBbkU`;
