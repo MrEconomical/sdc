@@ -2060,7 +2060,7 @@ function Init(final)
                 message: {
                     channelId: channelId,
                     nonce: this.GetNonce(),
-                    content: "```ml\n-----SYSTEM MESSAGE-----\n```" + sysmsg + "\n`𝘚𝘪𝘮𝘱𝘭𝘦𝘋𝘪𝘴𝘤𝘰𝘳𝘥𝘊𝘳𝘺𝘱𝘵` ```yaml\n𝘚𝘪𝘮𝘱𝘭𝘦𝘋𝘪𝘴𝘤𝘰𝘳𝘥𝘊𝘳𝘺𝘱𝘵\n```"
+                    content: "```ml\n-----SYSTEM MESSAGE-----\n```" + sysmsg + "\n`SimpleDiscordCrypt` ```yaml\nSimpleDiscordCrypt\n```"
                 }
             }, () => { /*TODO*/ });
         },
@@ -3719,7 +3719,7 @@ async function handleSend(channelId, message, forceSimple) {
 
     let channel = Discord.getChannel(channelId);
     //if(forceSimple || Cache.channelBlacklist === 2 || (channel.type === 0 && !Utils.Can(EMBED_LINKS_CHECK, Discord.getCurrentUser(), channel))) {
-       message.content = payload + " `𝘚𝘪𝘮𝘱𝘭𝘦𝘋𝘪𝘴𝘤𝘰𝘳𝘥𝘊𝘳𝘺𝘱𝘵`";
+       message.content = payload + " `SimpleDiscordCrypt`";
     /*}
     else {
         message.content = "";
@@ -3732,7 +3732,7 @@ async function handleSend(channelId, message, forceSimple) {
             },
             description: payload,
             footer: {
-                text: "𝘚𝘪𝘮𝘱𝘭𝘦𝘋𝘪𝘴𝘤𝘰𝘳𝘥𝘊𝘳𝘺𝘱𝘵",
+                text: "SimpleDiscordCrypt",
                 icon_url: "https://i.imgur.com/zWXtTpX.png",
             }
         };
