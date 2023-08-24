@@ -1374,7 +1374,7 @@ function Init(final)
     modules.PrivateChannelManager = findModuleByUniqueProperties([ 'openPrivateChannel', 'ensurePrivateChannel', 'closePrivateChannel' ]);
     if(modules.PrivateChannelManager == null) { if(final) Utils.Error("PrivateChannelManager not found."); return 0; }
 
-    modules.Premium = findModuleByUniqueProperties([ 'canUseEmojisEverywhere' ]);
+    // DISABLED modules.Premium = findModuleByUniqueProperties([ 'canUseEmojisEverywhere' ]);
     modules.MessageCache = findModuleByUniqueProperties([ 'getMessage', 'getMessages' ]);
 
     Discord.modules = modules;
@@ -4275,8 +4275,8 @@ function Unload()
     restoreFunction('CloudUploadPrototype', 'uploadFileToCloud');
     Discord.detour_cloudUpload = Discord.cloudUpload;
 
-    if(Discord.detour_canUseEmojisEverywhere != null) restoreFunction('Premium', 'canUseEmojisEverywhere');
-    if(Discord.detour_canUseAnimatedEmojis != null) restoreFunction('Premium', 'canUseAnimatedEmojis');
+    // DISABLED if(Discord.detour_canUseEmojisEverywhere != null) restoreFunction('Premium', 'canUseEmojisEverywhere');
+    // DISABLED if(Discord.detour_canUseAnimatedEmojis != null) restoreFunction('Premium', 'canUseAnimatedEmojis');
         if(Discord.detour_setAttribute != null) restoreFunction('IframePrototype', 'setAttribute');
 
     if(Patcher != null) Patcher.observer.disconnect();
