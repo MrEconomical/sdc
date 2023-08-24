@@ -4038,10 +4038,10 @@ function Load()
 
     /* DISABLED if(Discord.detour_canUseEmojisEverywhere != null) Discord.detour_canUseEmojisEverywhere = function() {
         return !!Utils.GetCurrentChannelEncrypt() || Discord.original_canUseEmojisEverywhere.apply(this, arguments);
-    };*/
+    };
     if(Discord.detour_canUseAnimatedEmojis != null) Discord.detour_canUseAnimatedEmojis = function() {
         return !!Utils.GetCurrentChannelEncrypt() || Discord.original_canUseAnimatedEmojis.apply(this, arguments);
-    };
+    };*/
 
     MenuBar.Show(() => Utils.GetCurrentChannelEncrypt(),
                  () => { Utils.ToggleCurrentChannelEncrypt(); MenuBar.Update(); },
