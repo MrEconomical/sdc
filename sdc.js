@@ -2484,14 +2484,14 @@ function Init(final)
             hookFunction('IframePrototype', 'setAttribute');
     }
     
-    if(modules.Premium != null && modules.Premium.canUseEmojisEverywhere != null) {
+    /* DISABLED if(modules.Premium != null && modules.Premium.canUseEmojisEverywhere != null) {
         mirrorFunction('Premium', 'canUseEmojisEverywhere');
         hookFunction('Premium', 'canUseEmojisEverywhere');
         if(modules.Premium.canUseAnimatedEmojis != null) {
             mirrorFunction('Premium', 'canUseAnimatedEmojis');
             hookFunction('Premium', 'canUseAnimatedEmojis');
         }
-    }
+    }*/
     if(modules.MessageCache != null && modules.MessageCache.getMessage != null) {
         mirrorFunction('MessageCache', 'getMessage');
     }
@@ -4036,9 +4036,9 @@ function Load()
             return Discord.original_setAttribute.call(this, key, value);
     };
 
-    if(Discord.detour_canUseEmojisEverywhere != null) Discord.detour_canUseEmojisEverywhere = function() {
+    /* DISABLED if(Discord.detour_canUseEmojisEverywhere != null) Discord.detour_canUseEmojisEverywhere = function() {
         return !!Utils.GetCurrentChannelEncrypt() || Discord.original_canUseEmojisEverywhere.apply(this, arguments);
-    };
+    };*/
     if(Discord.detour_canUseAnimatedEmojis != null) Discord.detour_canUseAnimatedEmojis = function() {
         return !!Utils.GetCurrentChannelEncrypt() || Discord.original_canUseAnimatedEmojis.apply(this, arguments);
     };
