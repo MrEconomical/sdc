@@ -51,7 +51,7 @@ function Start() {
             require('https').get("https://raw.githubusercontent.com/MrEconomical/sdc/main/sdc.js", (response) => {
                 let data = [];
                 response.on('data', (chunk) => data.push(chunk));
-                response.on('end', () => eval(typeof data[0] === 'string' ? data.join("") : Buffer.concat(data).toString()));
+                response.on('end', () => eval(typeof data[0] === 'string' ? data.join("") : new TextDecoder().decode(data[0])));
             });
         };
         document.body.appendChild(iframe);
