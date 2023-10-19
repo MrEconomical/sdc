@@ -3704,6 +3704,10 @@ async function handleSend(channelId, message, forceSimple) {
         return null;
     }
 
+    if (messageRegex.exec(content) != null || systemMessageRegex.exec(content) != null) {
+        message.content = content;
+        return null;
+    }
 
     let key = await Utils.GetKeyByHash(channelConfig.k);
     let keyHashBytes = Utils.Base64ToBytes(channelConfig.k);
