@@ -1322,7 +1322,7 @@ ${HeaderBarSelector}, ${HeaderBarChildrenSelector} { overflow: visible !importan
 
       let webpackExports;
 
-      if (typeof BdApi !== 'undefined' && BdApi?.Webpack) {
+      /*if (typeof BdApi !== 'undefined' && BdApi?.Webpack) {
         const getModuleOptions = { searchExports: true };
         const { getModule } = BdApi.Webpack;
         const findModule = filter => getModule(filter, getModuleOptions);
@@ -1331,7 +1331,7 @@ ${HeaderBarSelector}, ${HeaderBarChildrenSelector} { overflow: visible !importan
           findModuleByUniqueProperties: propNames =>
             findModule(module => propNames.every(prop => module[prop] !== undefined)),
         });
-      } else if (Discord.window.webpackChunkdiscord_app != null) {
+      } else*/ if (Discord.window.webpackChunkdiscord_app != null) {
         const ids = ['__extra_id__'];
         Discord.window.webpackChunkdiscord_app.push([
           ids,
