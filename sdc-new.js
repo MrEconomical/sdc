@@ -1332,15 +1332,18 @@ ${HeaderBarSelector}, ${HeaderBarChildrenSelector} { overflow: visible !importan
             findModule(module => propNames.every(prop => module[prop] !== undefined)),
         });
       } else*/ if (Discord.window.webpackChunkdiscord_app != null) {
-        const ids = ['__extra_id__'];
+        const id = Symbol();
         Discord.window.webpackChunkdiscord_app.push([
-          ids,
+          [id],
           {},
           req => {
             webpackExports = req;
             ids.length = 0;
           },
         ]);
+
+        delete webpackExports.m[id];
+        delete webpackExports.c[id];
       } else return null;
 
       const cachedExports = new Set();
