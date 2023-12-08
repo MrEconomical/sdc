@@ -1337,12 +1337,12 @@ ${HeaderBarSelector}, ${HeaderBarChildrenSelector} { overflow: visible !importan
           [id],
           {},
           req => {
-            webpackExports = req;
+            // It seems to get called with two different require functions
+            if (req.c != null) {
+              webpackExports = req;
+            }
           },
         ]);
-
-        delete webpackExports.m[id];
-        delete webpackExports.c[id];
       } else return null;
 
       const cachedExports = new Set();
